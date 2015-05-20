@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1431976524 source:c:\users\u\desktop\ai\tmp\ggsmd\keyboard.cpp
+	"CandyLib.h"
+
+1431977230 c:\users\u\desktop\ai\tmp\ggsmd\candylib.h
+	<windows.h>
+
+1431976154 source:c:\users\u\desktop\ai\tmp\ggsmd\main.cpp
+	<windows.h>
+	<stdio.h>
+	"CandyLib.h"
+
+1431978368 source:c:\users\u\desktop\ai\tmp\ggsmd\screenshot.cpp
+	"CandyLib.h"
+
+1431978557 source:c:\users\u\desktop\ai\tmp\ggsmd\bmp2gamestate.cpp
+	"CandyLib.h"
+	<stdio.h>
+
