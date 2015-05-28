@@ -229,10 +229,10 @@ void Run(struct GameState *Current, int PositionA[], int PositionB[]){ // Positi
     }
     else{
         printf("Successfully Move!\n");
+        Current->Stepleft = Current->Stepleft-1;
     }
     Move(Current,PositionA,PositionB);
     Elliminate(Current,PositionA,PositionB);
-
 
     return;
 }
@@ -256,7 +256,14 @@ int main(){
         PrintState(&Current);
         FullCandy(&Current);
         PrintState(&Current);
-        printf("Input x1,y1,x2,y2:....\n");
+        if(Current.Stepleft == 0){
+            printf("Has no steps left....!\n");
+            break;
+        }
+        else{
+            printf("Input x1,y1,x2,y2:....\n");
+        }
     }
+    printf("Game Over!\n");
     return 0;
 }
