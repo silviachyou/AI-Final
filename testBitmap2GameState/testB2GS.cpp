@@ -55,7 +55,7 @@ int main() {
 
 	// Put image RGB values into bitmap
 	Mat image;
-	image = imread("screenShot.png", CV_LOAD_IMAGE_COLOR);
+	image = imread("screenShot3.png", CV_LOAD_IMAGE_COLOR);
 
 	
 	for(int i = 0 ; i < ScreenY; i++) {
@@ -129,7 +129,7 @@ void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 
 	// For testing
 	Mat test;
-	test = imread("screenShot.png", CV_LOAD_IMAGE_COLOR);
+	test = imread("screenShot3.png", CV_LOAD_IMAGE_COLOR);
 
 	Boundary b = FindBoundary(bitmap, ScreenX, ScreenY);
 
@@ -145,10 +145,6 @@ void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 	// Find game map size
 	cout << "MapSize: " << map_width << " x " << map_height << endl;
 	
-	// int** Map = new int*[map_height];
-	// for(int i = 0; i < map_height; i++) {
-	// 	Map[i] = new int[map_width];
-	// }
 
 	vector< vector<int> > Map;
 
@@ -159,8 +155,10 @@ void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 			if( HasCandy(bitmap, block_width, block_height, i, j) ){
 			 	int center_i = i + block_height/2;
 				int center_j = j + block_width/2;
-								
+
 				int color = FindColor(bitmap, center_i, center_j);
+				if(color == -1)
+					cout << Map.size() << "," << row.size() << endl << "------" <<endl;
 				row.push_back( color );
 			}
 			else{
@@ -199,19 +197,32 @@ int FindColor(Pixel** &bitmap, int i, int j){
 
 	if(bitmap[i][j].r == 255 && bitmap[i][j].g == 1 && bitmap[i][j].b == 0)
 		return 1;	//red
+
 	else if(bitmap[i][j].r == 255 && bitmap[i][j].g == 140 && bitmap[i][j].b == 14)
 		return 2;	//orange
+
 	else if(bitmap[i][j].r == 253 && bitmap[i][j].g == 232 && bitmap[i][j].b == 0)
 		return 3;	//yellow
-	else if(bitmap[i][j].r == 52 && bitmap[i][j].g == 179 && bitmap[i][j].b == 1)
+
+	else if(bitmap[i][j].r >= 49 && bitmap[i][j].r <= 52 &&
+			bitmap[i][j].g >= 179 && bitmap[i][j].g <= 196 &&
+			bitmap[i][j].b >= 0 && bitmap[i][j].b <= 1)
 		return 4;	//green
-	else if(bitmap[i][j].r == 44 && bitmap[i][j].g == 158 && bitmap[i][j].b == 255)
+
+	else if(bitmap[i][j].r >= 39 && bitmap[i][j].r <=44 &&
+			bitmap[i][j].g >= 158 && bitmap[i][j].g <= 175 && 
+			bitmap[i][j].b == 255)
 		return 5;	//blue
+	
 	else if(bitmap[i][j].r == 190 && bitmap[i][j].g == 25 && bitmap[i][j].b == 255)
 		return 6;	//purple
-	else
-		return -1;	//cannot detect
 
+	//RGB 6 221 255 strip blue
+	
+	else{
+		cout << (int)bitmap[i][j].r << " " << (int)bitmap[i][j].g << " " << (int)bitmap[i][j].b <<endl;
+		return -1;	//cannot detect
+	}
 }
 
 bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j){
@@ -225,9 +236,9 @@ bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j){
 
 bool IsGray(Pixel** &bitmap, int i, int j){
 
-	if((bitmap[i][j].r >= 65) && (bitmap[i][j].r <= 105) && 
-		(bitmap[i][j].g >= 90) && (bitmap[i][j].g <= 125) &&
-		(bitmap[i][j].b >= 95) && (bitmap[i][j].b <= 150)){
+	if (bitmap[i][j].r >= 65 && bitmap[i][j].r <= 105 && 
+		bitmap[i][j].g >= 90 && bitmap[i][j].g <= 125 &&
+		bitmap[i][j].b >= 95 && bitmap[i][j].b <= 150){
 		return true;
 	}
 	else
