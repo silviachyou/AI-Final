@@ -7,6 +7,38 @@
 using namespace std;
 using namespace cv;
 
+#define invalid -1
+#define white 50
+
+#define red 0
+#define orange 1
+#define yellow 2
+#define green 3
+#define blue 4
+#define purple 5
+
+#define horizontal_red 6
+#define horizontal_orange 7
+#define horizontal_yellow 8
+#define horizontal_green 9
+#define horizontal_blue 10
+#define horizontal_purple 11
+#define vertical_red 12
+#define vertical_orange 13
+#define vertical_yellow 14
+#define vertical_green 15
+#define vertical_blue 16
+#define vertical_purple 17
+#define square_red 18
+#define square_orange 19
+#define square_yellow 20
+#define square_green 21
+#define square_blue 22
+#define square_purple 23
+
+
+
+
 typedef unsigned char BYTE;
 typedef struct pixel {
 	BYTE r, g, b;
@@ -18,12 +50,15 @@ typedef struct boundary{
 } Boundary;
 
 // You can change prototype
-void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY);
+int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY);
 Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY);
 bool IsBoundColor(Pixel** &bitmap, int i, int j);
 bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j);
-bool IsGray(Pixel** &bitmap, int i, int j);
-int FindColor(Pixel** &bitmap, int i, int j);
+bool IsSameRange(Pixel p, Pixel q);
+bool IsGray(Pixel p);
+int DetectCandy(Pixel** &bitmap, int w, int h, int i, int j);
+int FindColor(Pixel pixel);
+
 
 int main() {
 	FILE* fp = fopen("byteStream", "r");
@@ -55,7 +90,7 @@ int main() {
 
 	// Put image RGB values into bitmap
 	Mat image;
-	image = imread("screenShot3.png", CV_LOAD_IMAGE_COLOR);
+	image = imread("../img/7.png", CV_LOAD_IMAGE_COLOR);
 
 	
 	for(int i = 0 ; i < ScreenY; i++) {
@@ -66,16 +101,23 @@ int main() {
 		}
 	}
 
-	Bmp2GameState(bitmap, ScreenX, ScreenY);
+	
+	int** candyMap = Bmp2GameState(bitmap, ScreenX, ScreenY);
+
+	// for(int i = 0; i < 9 ; i++){
+	// 	for(int j = 0 ; j < 9; j++)
+	// 		cout << candyMap[i][j] << " ";
+	// 	cout << endl;
+	// }
 
 
 	// Create a window for display, check if img read properly 
-	/*
+	
 	namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", image );                   
 
     waitKey(0);
-    */
+    
 
 	return 0;
 }
@@ -99,7 +141,7 @@ void CheckBitmap(Pixel** &bitmap, int ScreenX, int ScreenY){
 
 }
 
-void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
+int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 
 	// this is used for verify the correctness of content of bitmap
 	// you can modify the code here
@@ -123,126 +165,117 @@ void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 	fclose(fp);
 	*/
 
+	int** candyMap = new int*[9];
+	for(int i = 0; i < 9; i++) {
+		candyMap[i] = new int[9];
+	}
+
+	for(int i = 0; i < 9; i++)
+		for(int j = 0; j < 9; j++)
+			candyMap[i][j] = -1;
+	
 
 	// Width/ Height of a candy block
 	int block_width = 51, block_height = 52;
+	int x = 0, y = 0;
+	int map_width = 9, map_height = 9;
 
 	// For testing
-	Mat test;
-	test = imread("screenShot3.png", CV_LOAD_IMAGE_COLOR);
+	// Mat test;
+	// test = imread("../img/5.png", CV_LOAD_IMAGE_COLOR);
 
 	Boundary b = FindBoundary(bitmap, ScreenX, ScreenY);
 
-	// For testing, show the bounds
+	//For testing, show the bounds
 	// line(test,Point(0, b.top),Point(ScreenX, b.top), Scalar(255,0,0), 5);
 	// line(test,Point(0, b.bottom),Point(ScreenX, b.bottom), Scalar(255,0,0), 5);
 	// line(test,Point(b.left, 0),Point(b.left, ScreenY), Scalar(255,0,0), 5);
 	// line(test,Point(b.right, 0),Point(b.right, ScreenY), Scalar(255,0,0), 5);
-
-	int map_width = (b.right - b.left) / (block_width + 20);
-	int map_height = (b.bottom - b.top) / (block_height + 11);
-
-	// Find game map size
-	cout << "MapSize: " << map_width << " x " << map_height << endl;
 	
 
-	vector< vector<int> > Map;
+	map_width = (b.right - b.left) / (block_width + 20);
+	map_height = (b.bottom - b.top) / (block_height + 11);
+	cout << "MapSize: " << map_width << " x " << map_height << endl;
 
 	for (int i = b.top + 7; i < b.bottom; i += (block_height+11)){
-		vector<int> row;
+		y = 0;
 		for(int j = b.left + 13; j< b.right; j += (block_width+20)){
 			
 			if( HasCandy(bitmap, block_width, block_height, i, j) ){
-			 	int center_i = i + block_height/2;
-				int center_j = j + block_width/2;
+			 	
+			 	//int center_i = i + block_height/2;
+				//int center_j = j + block_width/2;
 
-				int color = FindColor(bitmap, center_i, center_j);
+				//int color = FindColor( bitmap[center_i][center_j] );
+				int color = DetectCandy(bitmap, i, j, i + block_height, j + block_width);
+
 				if(color == -1)
-					cout << Map.size() << "," << row.size() << endl << "------" <<endl;
-				row.push_back( color );
+					cout << x << "," << y << endl << "------" <<endl;
+				
+				//row.push_back( color );
+				candyMap[x][y] = color;
+				
 			}
 			else{
-				row.push_back(0);
+				candyMap[x][y] = -1;
 			}
+			y++;
 
 			// line(test,Point(j, i), Point(j + block_width, i + block_height), Scalar(0,0,255), 3);
 			// line(test,Point(j+block_width, i), Point(j, i + block_height), Scalar(0,0,255), 3);
 		}
-		Map.push_back(row);
+		x ++;
 	}
 	
-	for(int i = 0; i < Map.size() ; i++){
-		for(int j = 0 ; j < Map[i].size(); j++)
-			cout << Map[i][j] << " ";
+	for(int i = 0; i < 9 ; i++){
+		for(int j = 0 ; j < 9; j++)
+			cout << candyMap[i][j] << " ";
 		cout << endl;
 	}
-	
+
 	// For testing
-	namedWindow( "Display window", WINDOW_AUTOSIZE );
-    imshow( "Display window", test );                   
-    waitKey(0);
+	// namedWindow( "Display window", WINDOW_AUTOSIZE );
+ //    imshow( "Display window", test );                   
+ //    waitKey(0);
     
+    return candyMap;
 }
 
-int FindColor(Pixel** &bitmap, int i, int j){
-	
-	// Color Code
-	// 0: invalid 
-	// 1: red
-	// 2: orange
-	// 3: yellow
-	// 4: green
-	// 5: blue
-	// 6: purple
-
-	if(bitmap[i][j].r == 255 && bitmap[i][j].g == 1 && bitmap[i][j].b == 0)
-		return 1;	//red
-
-	else if(bitmap[i][j].r == 255 && bitmap[i][j].g == 140 && bitmap[i][j].b == 14)
-		return 2;	//orange
-
-	else if(bitmap[i][j].r == 253 && bitmap[i][j].g == 232 && bitmap[i][j].b == 0)
-		return 3;	//yellow
-
-	else if(bitmap[i][j].r >= 49 && bitmap[i][j].r <= 52 &&
-			bitmap[i][j].g >= 179 && bitmap[i][j].g <= 196 &&
-			bitmap[i][j].b >= 0 && bitmap[i][j].b <= 1)
-		return 4;	//green
-
-	else if(bitmap[i][j].r >= 39 && bitmap[i][j].r <=44 &&
-			bitmap[i][j].g >= 158 && bitmap[i][j].g <= 175 && 
-			bitmap[i][j].b == 255)
-		return 5;	//blue
-	
-	else if(bitmap[i][j].r == 190 && bitmap[i][j].g == 25 && bitmap[i][j].b == 255)
-		return 6;	//purple
-
-	//RGB 6 221 255 strip blue
-	
-	else{
-		cout << (int)bitmap[i][j].r << " " << (int)bitmap[i][j].g << " " << (int)bitmap[i][j].b <<endl;
-		return -1;	//cannot detect
-	}
-}
 
 bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j){
 
-	if(IsGray(bitmap, i, j) && IsGray(bitmap, i, j+w) && IsGray(bitmap, i+h, j) && IsGray(bitmap, i+h, j+w))
+	if(IsGray(bitmap[i][j]) && IsGray(bitmap[i][j+w]) && IsGray(bitmap[i+h][j]) && IsGray(bitmap[i+h][j+w]))
+		return true;
+	else if(IsSameRange(bitmap[i+20][j], bitmap[i+40][j]) && IsSameRange(bitmap[i+20][j+w], bitmap[i+40][j+w]))
 		return true;
 	else
 		return false;
 				
 }
 
-bool IsGray(Pixel** &bitmap, int i, int j){
+bool IsSameRange(Pixel p, Pixel q){
 
-	if (bitmap[i][j].r >= 65 && bitmap[i][j].r <= 105 && 
-		bitmap[i][j].g >= 90 && bitmap[i][j].g <= 125 &&
-		bitmap[i][j].b >= 95 && bitmap[i][j].b <= 150){
+	if (abs(p.r - q.r) <= 50 && 
+		abs(p.g - q.g) <= 50 &&
+		abs(p.b - q.b) <= 50)
 		return true;
-	}
+	
 	else
 		return false;
+	
+}
+
+bool IsGray(Pixel p){
+
+	if (p.r >= 65 && p.r <= 105 && 
+		p.g >= 85 && p.g <= 125 &&
+		p.b >= 95 && p.b <= 150)
+		return true;
+	
+	else{
+		//cout << (int)p.r << " " << (int)p.g << " " << (int)p.b << endl;
+		return false;
+	}
 }
 
 
@@ -257,21 +290,17 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 	bound.right = initRight;
 
 	int threshold = 100;
-	int count = 0;
-
 
 	// Find top boundary
 	for(int i = 0; i < ScreenY; i++) {
 		if(bound.top != 0)
 			break;
 
-		count = 0;
-		
+		int count = 0;		
 		for(int j = 0; j < ScreenX; j++) {
 			
-			if(IsBoundColor(bitmap, i, j)){
+			if(IsBoundColor(bitmap, i, j))
 				count++;
-			}
 			if(count >= threshold){
 				bound.top = i;
 				break;
@@ -285,13 +314,11 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		if(bound.bottom != ScreenY)
 			break;
 
-		count = 0;
-
+		int count = 0;
 		for(int j = 0; j < ScreenX; j++) {
 			
-			if(IsBoundColor(bitmap, i, j)){
+			if(IsBoundColor(bitmap, i, j))
 				count++;
-			}
 			if(count >= threshold){
 				bound.bottom = i;
 				break;
@@ -305,13 +332,11 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		if(bound.left != initLeft)
 			break;
 
-		count = 0;
-
+		int count = 0;
 		for(int i = 0; i < ScreenY; i++) {
 			
-			if(IsBoundColor(bitmap, i, j)){
+			if(IsBoundColor(bitmap, i, j))
 				count++;
-			}
 			if(count >= threshold){
 				bound.left = j;
 				break;
@@ -325,13 +350,11 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		if(bound.right != initRight)
 			break;
 		
-		count = 0;
-
+		int count = 0;
 		for(int i = 0; i < ScreenY; i++) {
 			
-			if(IsBoundColor(bitmap, i, j)){
+			if(IsBoundColor(bitmap, i, j))
 				count++;
-			}
 			if(count >= threshold){
 				bound.right = j;
 				break;
@@ -347,9 +370,164 @@ bool IsBoundColor(Pixel** &bitmap, int i, int j){
 
 	if (bitmap[i][j].r >= 75 && bitmap[i][j].r <= 100 && 
 		bitmap[i][j].g >= 95 && bitmap[i][j].g <= 120 &&
-		bitmap[i][j].b >= 115 && bitmap[i][j].b <= 150){
+		bitmap[i][j].b >= 115 && bitmap[i][j].b <= 150)
 			return true;
-	}
+	
 	else
 		return false;
+}
+
+
+int DetectCandy(Pixel** &bitmap, int start_i, int start_j, int end_i, int end_j){
+	
+	int center_i = (start_i + end_i) / 2;
+	int center_j = (start_j + end_j) / 2;
+	int color = invalid;
+	bool colorFound = false;
+	// int whiteSum = 0;
+	// float ratio;
+
+	Pixel pixel = bitmap[center_i][center_j];
+
+
+	for(int i = start_i; i < end_i; i++){
+		for(int j = start_j; j< end_j; j++){
+			if(colorFound)
+				break;
+			color = FindColor(bitmap[i][j]);
+			if( color != white && color != invalid ){
+				colorFound = true;
+				break;
+			}
+		}
+	}
+	
+
+	return color;
+
+
+	// if(pixel.r >= 225 && pixel.r <= 250 &&
+	// 		pixel.g >= 240 && pixel.g <= 250 &&
+	// 		pixel.b >= 230 && pixel.b <= 240)
+	// 	return horizontal_red; 
+
+	// else if(pixel.r >= 250 && pixel.r <= 255 &&
+	// 		pixel.g >= 245 && pixel.g <= 255 &&
+	// 		pixel.b >= 215 && pixel.b <= 225)
+	// 	return horizontal_orange;
+
+	// else if(pixel.r == 255 && 
+	// 		pixel.g == 211 && 
+	// 		pixel.b == 0)
+	// 	return horizontal_yellow;	
+
+	// else if(pixel.r == 138 && 
+	// 		pixel.g == 255 && 
+	// 		pixel.b == 102)
+	// 	return horizontal_green;
+
+	// else if(pixel.r >= 5 && pixel.r <= 20 &&
+	// 		pixel.g >= 195 && pixel.g <= 225 &&
+	// 		pixel.b >= 250 && pixel.b <= 255)
+	// 	return horizontal_blue;
+
+	// else if(pixel.r >= 250 && pixel.r <= 255 &&
+	// 		pixel.g >= 250 && pixel.g <= 255 &&
+	// 		pixel.b >= 250 && pixel.b <= 255)
+	// 	return horizontal_purple;
+
+	// else if(pixel.r == 247 && 
+	// 		pixel.g == 146 && 
+	// 		pixel.b == 12)
+	// 	return vertical_orange;
+
+	// else if(pixel.r == 30 && 
+	// 		pixel.g == 159 && 
+	// 		pixel.b == 233)
+	// 	return vertical_blue;
+
+	// else if(pixel.r >= 25 && pixel.r <= 35 &&
+	// 		pixel.g >= 230 && pixel.g <= 245 &&
+	// 		pixel.b >= 0 && pixel.b <= 5)
+	// 	return vertical_green;
+
+	// else if(pixel.r == 248 && 
+	// 		pixel.g == 255 && 
+	// 		pixel.b == 222)
+	// 	return vertical_purple;
+
+	// else if(pixel.r >= 89 && pixel.r <= 100 &&
+	// 		pixel.g >= 225 && pixel.g <= 235 &&
+	// 		pixel.b >= 45 && pixel.b <= 60)
+	// 	return square_green;
+
+	// else if(pixel.r >= 30 && pixel.r <= 40 &&
+	// 		pixel.g >= 190 && pixel.g <= 205 &&
+	// 		pixel.b >= 250 && pixel.b <= 255)
+	// 	return square_blue;
+
+	// else if(pixel.r >= 215 && pixel.r <= 225 &&
+	// 		pixel.g >= 60 && pixel.g <= 70 &&
+	// 		pixel.b >= 250 && pixel.b <= 255)
+	// 	return square_purple;
+
+	
+	// else{
+	// 	cout << (int)pixel.r << " " << (int)pixel.g << " " << (int)pixel.b <<endl;
+	// 	return invalid;	//cannot detect
+	// }
+}
+
+int FindColor(Pixel pixel){
+
+	// Color Code
+	// -1: invalid 
+	// 0: red
+	// 1: orange
+	// 2: yellow
+	// 3: green
+	// 4: blue
+	// 5: purple
+
+
+	if (pixel.r >= 250 && pixel.r <= 255 &&
+		pixel.g >= 0 && pixel.g <= 5 &&
+		pixel.b >= 0 && pixel.b <= 5)
+		return red;
+
+	else if(pixel.r >= 250 && pixel.r <= 255 &&
+			pixel.g >= 135 && pixel.g <= 145 &&
+			pixel.b >= 10 && pixel.b <= 20)
+		return orange;
+
+	else if(pixel.r >= 230 && pixel.r <= 255 && 
+			pixel.g >= 210 && pixel.g <= 230 &&
+			pixel.b >= 0 && pixel.b <= 10)
+		return yellow;
+
+	else if(pixel.r >= 45 && pixel.r <= 55 &&
+			pixel.g >= 175 && pixel.g <= 195 &&
+			pixel.b >= 0 && pixel.b <= 5)
+		return green;
+
+	else if(pixel.r >= 30 && pixel.r <= 45 &&
+			pixel.g >= 150 && pixel.g <= 175 && 
+			pixel.b >= 250 && pixel.b <= 255)
+		return blue;
+	
+	else if(pixel.r >= 180 && pixel.r <= 190 &&
+			pixel.g >= 20 && pixel.g <= 25 &&
+			pixel.b >= 250 && pixel.b <= 255)
+		return purple;
+
+	else if (pixel.r >= 245 && pixel.r <= 255 &&
+			pixel.g >= 245 && pixel.g <= 255 &&
+			pixel.b >= 245 && pixel.b <= 255)
+		return white;
+
+	
+	else{
+		//cout << (int)pixel.r << " " << (int)pixel.g << " " << (int)pixel.b <<endl;
+		return invalid;
+	}
 }
