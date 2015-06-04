@@ -7,15 +7,15 @@
 using namespace std;
 using namespace cv;
 
-#define invalid -1
+#define invalid 0
 #define white 50
 
-#define red 0
-#define orange 1
-#define yellow 2
-#define green 3
-#define blue 4
-#define purple 5
+#define red 1
+#define orange 2
+#define yellow 3
+#define green 4
+#define blue 5
+#define purple 6
 
 #define horizontal_red 6
 #define horizontal_orange 7
@@ -109,7 +109,6 @@ int main() {
 	// 		cout << candyMap[i][j] << " ";
 	// 	cout << endl;
 	// }
-
 
 	// Create a window for display, check if img read properly 
 	
