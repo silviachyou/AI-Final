@@ -52,7 +52,7 @@ typedef struct boundary{
 // You can change prototype
 int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY);
 Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY);
-bool IsBoundColor(Pixel** &bitmap, int i, int j);
+bool IsBoundColor(Pixel p);
 bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j);
 bool IsSameRange(Pixel p, Pixel q);
 bool IsGray(Pixel p);
@@ -75,24 +75,23 @@ int main() {
 	fread(ScreenData, sizeof(BYTE), 4 * ScreenX * ScreenY, fp);
 
 	// copy byteStream to bitmap
-	/*
-	for(int i = 0 ; i < ScreenY; i++) {
-		for(int j = 0; j < ScreenX; j++) {
-			//bitmap[i][j].a = ScreenData[4*((i*ScreenX)+j)];
-			bitmap[i][j].b = ScreenData[4*((i*ScreenX)+j)+1];
-			bitmap[i][j].g = ScreenData[4*((i*ScreenX)+j)+2];
-			bitmap[i][j].r = ScreenData[4*((i*ScreenX)+j)+3];
-		}
-	}
-	*/
+	
+	// for(int i = 0 ; i < ScreenY; i++) {
+	// 	for(int j = 0; j < ScreenX; j++) {
+	// 		//bitmap[i][j].a = ScreenData[4*((i*ScreenX)+j)];
+	// 		bitmap[i][j].b = ScreenData[4*((i*ScreenX)+j)+1];
+	// 		bitmap[i][j].g = ScreenData[4*((i*ScreenX)+j)+2];
+	// 		bitmap[i][j].r = ScreenData[4*((i*ScreenX)+j)+3];
+	// 	}
+	// }
+	
 	//CheckBitmap(bitmap, ScreenX, ScreenY);
 
 
-	// Put image RGB values into bitmap
+	// Put image RGB values into bitmap using opcnCV
 	Mat image;
-	image = imread("../img/7.png", CV_LOAD_IMAGE_COLOR);
+	image = imread("../img/screenShot4.png", CV_LOAD_IMAGE_COLOR);
 
-	
 	for(int i = 0 ; i < ScreenY; i++) {
 		for(int j = 0; j < ScreenX; j++) {
 			bitmap[i][j].b = image.at<Vec3b>(i,j).val[0];
@@ -101,17 +100,18 @@ int main() {
 		}
 	}
 
-	
+	// The candy matrix is stored in candMap
 	int** candyMap = Bmp2GameState(bitmap, ScreenX, ScreenY);
 
-	// for(int i = 0; i < 9 ; i++){
-	// 	for(int j = 0 ; j < 9; j++)
-	// 		cout << candyMap[i][j] << " ";
-	// 	cout << endl;
-	// }
+	// Print out the candy matrix
+	for(int i = 0; i < 9 ; i++){
+		for(int j = 0 ; j < 9; j++)
+			cout << candyMap[i][j] << " ";
+		cout << endl;
+	}
 
-	// Create a window for display, check if img read properly 
-	
+	// For testing
+	// Create a window for display, check if img read properly 	
 	namedWindow( "Display window", WINDOW_AUTOSIZE );
     imshow( "Display window", image );                   
 
@@ -141,7 +141,12 @@ void CheckBitmap(Pixel** &bitmap, int ScreenX, int ScreenY){
 }
 
 int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
+	// This fuction will analyze the image bitmap,
+	// detect boundaries, block and candy color,
+	// then return the 9x9 candy matrix candyMap to main function
 
+
+	// For debugging
 	// this is used for verify the correctness of content of bitmap
 	// you can modify the code here
 	/*
@@ -164,6 +169,8 @@ int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 	fclose(fp);
 	*/
 
+
+	// Allocate and initialize candyMap
 	int** candyMap = new int*[9];
 	for(int i = 0; i < 9; i++) {
 		candyMap[i] = new int[9];
@@ -171,21 +178,26 @@ int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 
 	for(int i = 0; i < 9; i++)
 		for(int j = 0; j < 9; j++)
-			candyMap[i][j] = -1;
+			candyMap[i][j] = invalid;
 	
 
-	// Width/ Height of a candy block
+	// Here define the Width and Height of a candy block
 	int block_width = 51, block_height = 52;
 	int x = 0, y = 0;
 	int map_width = 9, map_height = 9;
 
-	// For testing
+
+	// For debugging
 	// Mat test;
 	// test = imread("../img/5.png", CV_LOAD_IMAGE_COLOR);
 
+
+	// Retreive boundary of the candy map
+	// We need boundaries because every level has different matrix shapes
 	Boundary b = FindBoundary(bitmap, ScreenX, ScreenY);
 
-	//For testing, show the bounds
+	// For debugging 
+	// Show the bounds
 	// line(test,Point(0, b.top),Point(ScreenX, b.top), Scalar(255,0,0), 5);
 	// line(test,Point(0, b.bottom),Point(ScreenX, b.bottom), Scalar(255,0,0), 5);
 	// line(test,Point(b.left, 0),Point(b.left, ScreenY), Scalar(255,0,0), 5);
@@ -194,54 +206,53 @@ int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 
 	map_width = (b.right - b.left) / (block_width + 20);
 	map_height = (b.bottom - b.top) / (block_height + 11);
+	
 	cout << "MapSize: " << map_width << " x " << map_height << endl;
 
+
+	// The code below fill out the 9x9 candyMap
+	// x, y is the index of the 9x9 candyMap
+	// i, j is the index of the 1366x768 image bitmap
 	for (int i = b.top + 7; i < b.bottom; i += (block_height+11)){
 		y = 0;
 		for(int j = b.left + 13; j< b.right; j += (block_width+20)){
-			
+
 			if( HasCandy(bitmap, block_width, block_height, i, j) ){
-			 	
-			 	//int center_i = i + block_height/2;
-				//int center_j = j + block_width/2;
-
-				//int color = FindColor( bitmap[center_i][center_j] );
 				int color = DetectCandy(bitmap, i, j, i + block_height, j + block_width);
+				
+				// For debugging
+				// if(color == invalid)
+				// 	cout << x << "," << y << endl << "------" <<endl;
 
-				if(color == -1)
-					cout << x << "," << y << endl << "------" <<endl;
-				
-				//row.push_back( color );
 				candyMap[x][y] = color;
-				
 			}
-			else{
-				candyMap[x][y] = -1;
-			}
+			else
+				candyMap[x][y] = invalid;
+			
 			y++;
 
+			// For debugging
 			// line(test,Point(j, i), Point(j + block_width, i + block_height), Scalar(0,0,255), 3);
 			// line(test,Point(j+block_width, i), Point(j, i + block_height), Scalar(0,0,255), 3);
 		}
-		x ++;
+		x++;
 	}
 	
-	for(int i = 0; i < 9 ; i++){
-		for(int j = 0 ; j < 9; j++)
-			cout << candyMap[i][j] << " ";
-		cout << endl;
-	}
 
-	// For testing
+	// For debugging
+	// Create a window for display, check if img read properly
 	// namedWindow( "Display window", WINDOW_AUTOSIZE );
- //    imshow( "Display window", test );                   
- //    waitKey(0);
+ 	// imshow( "Display window", test );                   
+ 	// waitKey(0);
     
     return candyMap;
 }
 
 
 bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j){
+	// This function is to determine whether a block contains candy
+	// If all four corners of the block is gray, then it is a valid block
+	// else it is not a candy block and cannot be moved.
 
 	if(IsGray(bitmap[i][j]) && IsGray(bitmap[i][j+w]) && IsGray(bitmap[i+h][j]) && IsGray(bitmap[i+h][j+w]))
 		return true;
@@ -252,19 +263,10 @@ bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j){
 				
 }
 
-bool IsSameRange(Pixel p, Pixel q){
-
-	if (abs(p.r - q.r) <= 50 && 
-		abs(p.g - q.g) <= 50 &&
-		abs(p.b - q.b) <= 50)
-		return true;
-	
-	else
-		return false;
-	
-}
-
 bool IsGray(Pixel p){
+	// This is a function called by HasCandy()
+	// This function is to determine wheter a pixel is gray
+	// If you want to modify the range of the "gray color", modify it below
 
 	if (p.r >= 65 && p.r <= 105 && 
 		p.g >= 85 && p.g <= 125 &&
@@ -277,8 +279,29 @@ bool IsGray(Pixel p){
 	}
 }
 
+bool IsSameRange(Pixel p, Pixel q){
+	// This is a function called by HasCandy()
+	// This function is used to identify the square candy
+	// which is not useful in this version of code but will be used soon
+
+	if (abs(p.r - q.r) <= 50 && 
+		abs(p.g - q.g) <= 50 &&
+		abs(p.b - q.b) <= 50)
+		return true;
+	
+	else
+		return false;
+	
+}
+
+
+
 
 Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
+	// This is where we find the boundaries of the candy matrix in the image
+	// This is a function called by main()
+	// We can proceed detecting each candy blocks only if we first find the boundaries
+	// There are 4 boundaries : top / bottom / left / right
 	
 	int initLeft = 150, initRight = 920;
 
@@ -298,7 +321,7 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		int count = 0;		
 		for(int j = 0; j < ScreenX; j++) {
 			
-			if(IsBoundColor(bitmap, i, j))
+			if(IsBoundColor(bitmap[i][j]))
 				count++;
 			if(count >= threshold){
 				bound.top = i;
@@ -316,7 +339,7 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		int count = 0;
 		for(int j = 0; j < ScreenX; j++) {
 			
-			if(IsBoundColor(bitmap, i, j))
+			if(IsBoundColor(bitmap[i][j]))
 				count++;
 			if(count >= threshold){
 				bound.bottom = i;
@@ -334,7 +357,7 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		int count = 0;
 		for(int i = 0; i < ScreenY; i++) {
 			
-			if(IsBoundColor(bitmap, i, j))
+			if(IsBoundColor(bitmap[i][j]))
 				count++;
 			if(count >= threshold){
 				bound.left = j;
@@ -352,7 +375,7 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
 		int count = 0;
 		for(int i = 0; i < ScreenY; i++) {
 			
-			if(IsBoundColor(bitmap, i, j))
+			if(IsBoundColor(bitmap[i][j]))
 				count++;
 			if(count >= threshold){
 				bound.right = j;
@@ -365,11 +388,14 @@ Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY){
     return bound;
 }
 
-bool IsBoundColor(Pixel** &bitmap, int i, int j){
 
-	if (bitmap[i][j].r >= 75 && bitmap[i][j].r <= 100 && 
-		bitmap[i][j].g >= 95 && bitmap[i][j].g <= 120 &&
-		bitmap[i][j].b >= 115 && bitmap[i][j].b <= 150)
+bool IsBoundColor(Pixel p){
+	// This function that will be called by FindBoundary(),
+	// to determine whether a pixel's color is boundary color
+
+	if (p.r >= 75 && p.r <= 100 && 
+		p.g >= 95 && p.g <= 120 &&
+		p.b >= 115 && p.b <= 150)
 			return true;
 	
 	else
@@ -378,16 +404,19 @@ bool IsBoundColor(Pixel** &bitmap, int i, int j){
 
 
 int DetectCandy(Pixel** &bitmap, int start_i, int start_j, int end_i, int end_j){
+	// This is the function called by main(), 
+	// it detect the candy color and pattern within a block by calling FindColor() function
 	
-	int center_i = (start_i + end_i) / 2;
-	int center_j = (start_j + end_j) / 2;
+	
 	int color = invalid;
 	bool colorFound = false;
+	
+	// variables not used by now
+	// int center_i = (start_i + end_i) / 2;
+	// int center_j = (start_j + end_j) / 2;
+	// Pixel pixel = bitmap[center_i][center_j];
 	// int whiteSum = 0;
 	// float ratio;
-
-	Pixel pixel = bitmap[center_i][center_j];
-
 
 	for(int i = start_i; i < end_i; i++){
 		for(int j = start_j; j< end_j; j++){
@@ -478,6 +507,8 @@ int DetectCandy(Pixel** &bitmap, int start_i, int start_j, int end_i, int end_j)
 }
 
 int FindColor(Pixel pixel){
+	// This function is called by DetectCandy()
+	// which will return the color of a pixel
 
 	// Color Code
 	// -1: invalid 
