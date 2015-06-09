@@ -49,8 +49,13 @@ typedef struct boundary{
 	int top, bottom, left, right;
 } Boundary;
 
+typedef struct coordinate
+{
+	int x, y;
+} Coordinate;
+
 // You can change prototype
-int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY);
+int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY, Coordinate** &candyXY);
 Boundary FindBoundary(Pixel** &bitmap, int ScreenX, int ScreenY);
 bool IsBoundColor(Pixel p);
 bool HasCandy(Pixel** &bitmap, int w, int h, int i, int j);
@@ -100,8 +105,22 @@ int main() {
 		}
 	}
 
-	// The candy matrix is stored in candMap
-	int** candyMap = Bmp2GameState(bitmap, ScreenX, ScreenY);
+	// candyXY store the (x,y) coordinate of each candy
+	Coordinate** candyXY = new Coordinate*[9];
+	for(int i = 0; i < 9; i++) {
+		candyXY[i] = new Coordinate[9];
+	}
+	for(int i = 0; i < 9 ; i++){
+		for(int j = 0 ; j < 9; j++){
+			candyXY[i][j].x = -1;
+			candyXY[i][j].y = -1;
+		}
+	}
+
+	// The candy matrix is stored in candMap[][]
+	// candyXY[][] is passed in by reference
+	// The values of candyXY matrix will change during Bmp2GameState()
+	int** candyMap = Bmp2GameState(bitmap, ScreenX, ScreenY, candyXY);
 
 	// Print out the candy matrix
 	for(int i = 0; i < 9 ; i++){
@@ -109,6 +128,7 @@ int main() {
 			cout << candyMap[i][j] << " ";
 		cout << endl;
 	}
+
 
 	// For testing
 	// Create a window for display, check if img read properly 	
@@ -140,7 +160,7 @@ void CheckBitmap(Pixel** &bitmap, int ScreenX, int ScreenY){
 
 }
 
-int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
+int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY, Coordinate** &candyXY) {
 	// This fuction will analyze the image bitmap,
 	// detect boundaries, block and candy color,
 	// then return the 9x9 candy matrix candyMap to main function
@@ -223,12 +243,15 @@ int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY) {
 				// For debugging
 				// if(color == invalid)
 				// 	cout << x << "," << y << endl << "------" <<endl;
-
 				candyMap[x][y] = color;
+
 			}
 			else
 				candyMap[x][y] = invalid;
 			
+			candyXY[x][y].x = i + block_height / 2;
+			candyXY[x][y].y = j + block_width / 2;
+
 			y++;
 
 			// For debugging
@@ -511,13 +534,13 @@ int FindColor(Pixel pixel){
 	// which will return the color of a pixel
 
 	// Color Code
-	// -1: invalid 
-	// 0: red
-	// 1: orange
-	// 2: yellow
-	// 3: green
-	// 4: blue
-	// 5: purple
+	// 0: invalid 
+	// 1: red
+	// 2: orange
+	// 3: yellow
+	// 4: green
+	// 5: blue
+	// 6: purple
 
 
 	if (pixel.r >= 250 && pixel.r <= 255 &&
