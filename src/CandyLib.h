@@ -16,5 +16,8 @@ LRESULT __stdcall HookCallback(int nCode, WPARAM wParam, LPARAM lParam);
 void GetScreenShot();
 
 // bitmap to game state
-void Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY);
+int** Bmp2GameState(Pixel** &bitmap, int ScreenX, int ScreenY);
+
+// use virtual mouse click to output
+void virtualMouseClick(int fromX, int fromY, int toX, int toY);
 #endif // CANDYLIB_H_INCLUDED

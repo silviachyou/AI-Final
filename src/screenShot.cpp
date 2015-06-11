@@ -1,5 +1,5 @@
 #include "CandyLib.h"
-
+#include <stdio.h>
 void GetScreenShot(void)
 {
     int x1, y1, x2, y2, w, h;
@@ -41,6 +41,10 @@ void GetScreenShot(void)
     // get byteStream
     ScreenData = (BYTE*)malloc(4 * ScreenX * ScreenY);
     GetDIBits(hDC, hBitmap, 0, ScreenY, ScreenData, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
+
+    FILE* fp = fopen("byteStream", "w");
+    fwrite(ScreenData, sizeof(BYTE), 4 * ScreenX * ScreenY, fp);
+    fclose(fp);
 
     // convert byteStream to r/g/b bitmap
     Pixel** bitmap = new Pixel*[ScreenY];

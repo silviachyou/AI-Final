@@ -1,9 +1,12 @@
+#include <windows.h>
+#include <stdio.h>
 #include "CandyLib.h"
-
 // This struct contains the data received by the hook callback. As you see in the callback function
 // it contains the thing you will need: vkCode = virtual key code.
 
 HHOOK _hook;
+
+
 
 void SetHook()
 {
@@ -36,11 +39,12 @@ LRESULT __stdcall HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
             // lParam is the pointer to the struct containing the data needed, so cast and assign it to kdbStruct.
             kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
             // a key (non-system) is pressed.
-            if (kbdStruct.vkCode == VK_F1)
+            if (kbdStruct.vkCode == VK_F2)
             {
-                // F1 is pressed!
-                //MessageBox(NULL, "Love Bobolu <3", "key pressed", MB_ICONINFORMATION);
+                printf("call GetScreenShot()\n");
                 GetScreenShot();
+                printf("call virtualMouseClick()\n");
+                virtualMouseClick(864,385, 794,387);
             }
         }
     }
