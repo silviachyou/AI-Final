@@ -2,6 +2,7 @@ import numpy as np
 import win32com, win32api, win32con
 import subprocess
 import time
+from MonteCarlo import *
 #n*m
 
 #prev row: n - 4
@@ -187,8 +188,8 @@ def read_map():
     col=0
     iin = 0
     for index,i in enumerate(file1):
-	if i=='\n':
-		continue
+        if i=='\n':
+            continue
         i = i.strip().split(' ')
         #print(index)
         if len(i)==0 :
@@ -235,7 +236,7 @@ def main():
         #print(u_input)
         time.sleep(2)
         win32api.keybd_event(win32con.VK_F2, 0, 0, 0)
-	time.sleep(2)
+        time.sleep(2)
         Cor,MAP,row,col = read_map()
         if np.array_equal(PrevMAP ,MAP):
             continue
