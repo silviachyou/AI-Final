@@ -3,7 +3,7 @@ import random
 exp_time = 10
 
 def eliminate(olda,n,m):
-    score = 0
+    score = 0.
     Delete = [[0 for j in range(m)] for i in range(n)]
     for i in range(n):
         last = 0
@@ -61,16 +61,18 @@ def countscore(olda,n,m):
 def generatemap(olda,n,m):
     score = 0.
     while(1):
+        #print "-------------------"
+        #print olda
         for i in range(n):
             for j in range(m):
                 if olda[i][j] == -1:
                     olda[i][j] = random.randint(1,6)
+        #print olda
         olda,temp_score = eliminate(olda,n,m)
         if temp_score == 0:
             break
         score += temp_score
-
-    return olda,score
+    return score
 
 def exp(x1,y1,x2,y2,a,olda,n,m):
     
@@ -80,10 +82,12 @@ def exp(x1,y1,x2,y2,a,olda,n,m):
     olda,score = eliminate(olda,n,m)
     exp_score = 0.
     for i in range(exp_time):
-        olda,temp_score = generatemap(olda,n,m)
+        newa = olda.copy()
+        temp_score = generatemap(newa,n,m)
         exp_score += temp_score
+    #print exp_score
     score += exp_score/exp_time
-    print score
+    #print score
 
 
     return score
